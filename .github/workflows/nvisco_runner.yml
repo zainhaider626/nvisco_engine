@@ -1,0 +1,40 @@
+name: Nvisco Autonomous Engine 24-7
+
+on:
+  schedule:
+    # Runs twice every day automatically (at 00:00 and 12:00 UTC)
+    - cron: '0 0,12 * * *'
+  workflow_dispatch: # Allows clicking "Run workflow" manually at any second
+
+permissions:
+  contents: write
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: pip install requests
+
+      - name: Run Master Engine
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+        run: python nvisco_engine.py
+
+      - name: Commit Dashboard, SEO Pages, and Audit Fixes
+        run: |
+          git config --global user.name "Nvisco-Autonomous-Bot"
+          git config --global user.email "bot@nvisco.com"
+          git add -A
+          git diff --staged --quiet || (git commit -m "Auto-update: SEO fixes, IndexNow sync, and lead drafts [skip ci]" && git push)
