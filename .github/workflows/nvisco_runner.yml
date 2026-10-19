@@ -2,9 +2,8 @@ name: Nvisco Autonomous Engine 24-7
 
 on:
   schedule:
-    # Runs twice every day automatically (at 00:00 and 12:00 UTC)
     - cron: '0 0,12 * * *'
-  workflow_dispatch: # Allows clicking "Run workflow" manually at any second
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -24,17 +23,16 @@ jobs:
       - name: Install Dependencies
         run: pip install requests
 
-      - name: Run Master Engine
+      - name: Run Engine
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
           INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
         run: python nvisco_engine.py
 
-      - name: Commit Dashboard, SEO Pages, and Audit Fixes
+      - name: Commit Dashboard and SEO Pages
         run: |
-          git config --global user.name "Nvisco-Autonomous-Bot"
-          git config --global user.email "bot@nvisco.com"
+          git config --global user.name "Nvisco-Bot"
+          git config --global user.email "nvisco.pak@gmail.com"
           git add -A
-          git diff --staged --quiet || (git commit -m "Auto-update: SEO fixes, IndexNow sync, and lead drafts [skip ci]" && git push)
+          git diff --staged --quiet || (git commit -m "Auto-update: SEO pages and dashboard [skip ci]" && git push)
