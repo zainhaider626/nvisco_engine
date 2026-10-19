@@ -13,9 +13,10 @@ DOMAIN = "www.nvisco.com"
 SITE_URL = f"https://{DOMAIN}"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-GMAIL_USER = "nvisco.pak@gmail.com"
-GMAIL_APP_PASS = os.getenv("GMAIL_APP_PASS")
-RECIPIENT_EMAIL = "nvisco.pak@gmail.com"
+# Matches the exact names from your GitHub Secrets screenshot
+GMAIL_USER = os.getenv("GMAIL_ADDRESS", "nvisco.pak@gmail.com")
+GMAIL_APP_PASS = os.getenv("GMAIL_APP_PASSWORD")
+RECIPIENT_EMAIL = GMAIL_USER
 
 INDEXNOW_KEY = os.getenv("INDEXNOW_KEY", str(uuid.uuid4()).replace("-", ""))
 
@@ -23,7 +24,7 @@ INDEXNOW_KEY = os.getenv("INDEXNOW_KEY", str(uuid.uuid4()).replace("-", ""))
 def send_email_alert(subject, body, link=""):
     """Dispatches lead alerts straight to nvisco.pak@gmail.com."""
     if not GMAIL_APP_PASS:
-        print("[!] GMAIL_APP_PASS secret is missing. Email skipped.")
+        print("[!] GMAIL_APP_PASSWORD secret is missing or empty. Email skipped.")
         return
 
     try:
@@ -131,12 +132,14 @@ HIGH_INTENT_TOPICS = [
 
 def generate_targeted_content():
     if not GEMINI_API_KEY:
+        print("[!] GEMINI_API_KEY is missing. Skipping AI page drafting.")
         return None
 
     topic = HIGH_INTENT_TOPICS[datetime.now().timetuple().tm_yday % len(HIGH_INTENT_TOPICS)]
     filename = f"{topic['slug']}.html"
 
     if os.path.exists(filename):
+        print(f"[*] Page {filename} already exists. Skipping duplicate.")
         return None
 
     print(f"[*] Drafting technical authority page: {topic['title']}")
@@ -147,10 +150,15 @@ def generate_targeted_content():
     Tone: Professional hardware systems engineering team.
     """
 
-    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
     try:
         res = requests.post(endpoint, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=45)
-        body = res.json()["candidates"][0]["content"]["parts"][0]["text"].replace("```html", "").replace("```", "").strip()
+        data = res.json()
+        if "candidates" not in data or not data["candidates"]:
+            print(f"[!] Gemini generation error: {data}")
+            return None
+
+        body = data["candidates"][0]["content"]["parts"][0]["text"].replace("```html", "").replace("```", "").strip()
 
         schema = {
             "@context": "https://schema.org",
